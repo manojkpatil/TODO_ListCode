@@ -2,8 +2,6 @@ const express = require("express");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 const path = require("path");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
 
 app = express();
 const databasePath = path.join(__dirname, "todoApplication.db");
@@ -177,8 +175,90 @@ app.get("/todos/:todoId/", async (request, response) => {
   const getListById = `
     SELECT *
     FROM todo 
-    WHERE todo_id = ${todoId};`;
+    WHERE id = ${todoId};`;
   dbResponse = await database.get(getListById);
-  response.send(dbResponse);
+  response.send(convertToCamelCase(dbResponse));
 });
+
+app.get("/agenda/", async (request, response) => {
+  const { date } = request.query;
+  console.log(date);
+  const getMethodQuery = `
+  SELECT *
+  FROM todo
+  WHERE due_date = '${date}';`;
+  const dbResponse = await database.all(getMethodQuery);
+  response.send(dbResponse.map((data) => convertToCamelCase(data)));
+});
+
+app.post("/todos/", async (request, response) => {
+  const { id, todo, priority, status, category, dueDate } = request.body;
+  const postMethodQuery = `
+  INSERT INTO todo
+  (id, todo, priority, status, category, due_date)
+  VALUES 
+  (${id}, '${todo}', '${priority}', '${status}', '${category}', '${dueDate}');`;
+  await database.run(postMethodQuery);
+  response.send("Todo Successfully Added");
+});
+
+app.put("/todos/:todoId/", async (request, response) => {
+  const { todoId } = request.params;
+  const { status, priority, todo, category, dueDate } = request.body;
+  let updateMethodQuery = null;
+  switch (true) {
+    case status !== undefined:
+      updateMethodQuery = `
+        UPDATE todo 
+        SET status = '${status}'
+        WHERE id = ${todoId};`;
+      await database.run(updateMethodQuery);
+      response.send("Status Updated");
+      break;
+    case priority !== undefined:
+      updateMethodQuery = `
+            UPDATE todo 
+            SET priority = '${priority}'
+            WHERE id = ${todoId};`;
+      await database.run(updateMethodQuery);
+      response.send("Priority Updated");
+      break;
+    case todo !== undefined:
+      updateMethodQuery = `
+        UPDATE todo 
+        SET todo = '${todo}'
+        WHERE id = ${todoId};`;
+      await database.run(updateMethodQuery);
+      response.send("Todo Updated");
+      break;
+    case category !== undefined:
+      updateMethodQuery = `
+            UPDATE todo 
+            SET category = '${category}'
+            WHERE id = ${todoId};`;
+      await database.run(updateMethodQuery);
+      response.send("Category Updated");
+      break;
+    case dueDate !== undefined:
+      updateMethodQuery = `
+        UPDATE todo 
+        SET due_date = '${dueDate}'
+        WHERE id = ${todoId};`;
+      await database.run(updateMethodQuery);
+      response.send("Due Date Updated");
+    default:
+      response.send("nothing updated");
+      break;
+  }
+});
+
+app.delete("/todos/:todoId/", async (request, response) => {
+  const { todoId } = request.params;
+  const deleteMethodQuery = `
+    DELETE FROM todo 
+    WHERE id = ${todoId};`;
+  await database.run(deleteMethodQuery);
+  response.send("Todo Deleted");
+});
+
 module.exports = app;
