@@ -5,7 +5,6 @@ const path = require("path");
 
 app = express();
 const databasePath = path.join(__dirname, "todoApplication.db");
-app.use(express.json());
 
 let database = null;
 
@@ -23,7 +22,6 @@ const initializeDbAndServer = async () => {
     process.exit(1);
   }
 };
-
 initializeDbAndServer();
 
 const convertToCamelCase = (dbResponse) => {
@@ -176,7 +174,8 @@ app.get("/todos/:todoId/", async (request, response) => {
     SELECT *
     FROM todo 
     WHERE id = ${todoId};`;
-  dbResponse = await database.get(getListById);
+  dbResponse = await database.all(getListById);
+  console.log(dbResponse);
   response.send(convertToCamelCase(dbResponse));
 });
 
@@ -192,7 +191,10 @@ app.get("/agenda/", async (request, response) => {
 });
 
 app.post("/todos/", async (request, response) => {
+  console.log(request.body);
   const { id, todo, priority, status, category, dueDate } = request.body;
+  console.log(id);
+  console.log(category);
   const postMethodQuery = `
   INSERT INTO todo
   (id, todo, priority, status, category, due_date)
